@@ -13,32 +13,32 @@ app.get("/", (req, res) => {
     res.send("Server is running 🚀");
 });
 
-// 🔍 Search API
 app.get("/search", async (req, res) => {
     const q = req.query.q;
 
-    if (!q) {
-        return res.json([]);
-    }
+    if (!q) return res.json([]);
 
     try {
         const [rows] = await pool.query(
             `
       SELECT 
-        village_name,
-        subdistrict,
-        district,
-        state
-      FROM villages
-      WHERE village_name LIKE ?
+        v.village_name,
+        sd.subdistrict_name,
+        d.district_name,
+        s.state_name
+      FROM villages v
+      JOIN subdistricts sd ON v.subdistrict_id = sd.id
+      JOIN districts d ON sd.district_id = d.id
+      JOIN states s ON d.state_id = s.id
+      WHERE v.village_name LIKE ?
       LIMIT 10
       `,
             [`%${q}%`]
         );
 
         res.json(rows);
-    } catch (error) {
-        console.error("DB ERROR:", error);
+    } catch (err) {
+        console.error("DB ERROR:", err);
         res.status(500).json({ error: "Database error" });
     }
 });
