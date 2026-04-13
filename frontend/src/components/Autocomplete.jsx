@@ -39,7 +39,8 @@ function Autocomplete({ onSelect }) {
 
     debounceTimeout.current = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:5000/search?q=${encodeURIComponent(value)}`);
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const res = await fetch(`${apiUrl}/search?q=${encodeURIComponent(value)}`);
         const data = await res.json();
 
         const formatted = data.map((item, index) => ({
