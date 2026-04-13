@@ -1,44 +1,51 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const db = require("./db");
+import express from "express";
+import cors from "cors";
+import pool from "./db.js";
 
 const app = express();
-app.use(cors());
 
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Health check (IMPORTANT for Railway)
 app.get("/", (req, res) => {
-    res.send("API running 🚀");
+    res.send("Server is running 🚀");
 });
 
+// 🔍 Search API
 app.get("/search", async (req, res) => {
     const q = req.query.q;
 
-    if (!q) return res.json([]);
+    if (!q) {
+        return res.json([]);
+    }
 
     try {
-        const [rows] = await db.query(
-            `SELECT 
-      v.village_name,
-      sd.subdistrict_name,
-      d.district_name,
-      s.state_name
-    FROM villages v
-   JOIN subdistricts sd ON v.subdistrict_code = sd.subdistrict_code
-   JOIN districts d ON sd.district_code = d.district_code
-   JOIN states s ON d.state_code = s.state_code
-   WHERE LOWER(village_name) LIKE LOWER(?)
-   LIMIT 10`,
+        const [rows] = await pool.query(
+            `
+      SELECT 
+        village_name,
+        subdistrict,
+        district,
+        state
+      FROM villages
+      WHERE village_name LIKE ?
+      LIMIT 10
+      `,
             [`%${q}%`]
         );
 
-
         res.json(rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Server error");
+    } catch (error) {
+        console.error("DB ERROR:", error);
+        res.status(500).json({ error: "Database error" });
     }
 });
 
-app.listen(5000, () => {
-    console.log("🚀 Server running on port 5000");
+// 🚀 Start server (Railway uses dynamic port)
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
